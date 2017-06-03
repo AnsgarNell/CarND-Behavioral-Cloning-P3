@@ -12,8 +12,8 @@ with open('./data.bak/driving_log.csv') as csvfile:
 
 from sklearn.model_selection import train_test_split
 from keras.preprocessing.image import img_to_array, load_img
-# Multiply by 3 because we get data from 3 different angles
-train_samples, validation_samples = train_test_split(samples*3, test_size=0.2)
+# Multiply by 3 because we get data from 3 different angles, and flipped images
+train_samples, validation_samples = train_test_split(samples*3*2, test_size=0.2)
 
 import cv2
 import numpy as np
