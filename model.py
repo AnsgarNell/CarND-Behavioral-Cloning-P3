@@ -2,14 +2,18 @@ import os
 import csv
 
 samples = []
-with open('./data/driving_log.csv') as csvfile:
+# Use this with data provided by Udacity
+with open('./data.bak/driving_log.csv') as csvfile:
+# Use this for own data
+#with open('./data/driving_log.csv') as csvfile:
 	reader = csv.reader(csvfile)
 	for line in reader:
 		samples.append(line)
 
 from sklearn.model_selection import train_test_split
 from keras.preprocessing.image import img_to_array, load_img
-train_samples, validation_samples = train_test_split(samples, test_size=0.2)
+# Multiply by 3 because we get data from 3 different angles
+train_samples, validation_samples = train_test_split(samples*3, test_size=0.2)
 
 import cv2
 import numpy as np
@@ -24,16 +28,27 @@ def generator(samples, batch_size=256):
 
 			images = []
 			angles = []
-			for batch_sample in batch_samples:
-				# Use this with data provided by Udacity
-				#name = './data/IMG/'+batch_sample[0].split('/')[-1]
-				# Use this for own data
-				name = batch_sample[0].split('/')[-1]
-				image = load_img(name)
-				image = img_to_array(image)
+			for batch_sample in batch_samples:				
+				for i in range (3):
+					# Use this with data provided by Udacity
+					name = './data.bak/IMG/'+batch_sample[i].split('/')[-1]
+					# Use this for own data
+					#name = batch_sample[i].split('/')[-1]
+					image = load_img(name)
+					image = img_to_array(image)
+					images.append(image)
+					image_flipped = np.fliplr(image)
+					images.append(image_flipped)
 				center_angle = float(batch_sample[3])
-				images.append(image)
+				correction = 0.2
+				left_angle = center_angle + correction
+				right_angle = center_angle - correction
 				angles.append(center_angle)
+				angles.append(-center_angle)
+				angles.append(left_angle)
+				angles.append(-left_angle)
+				angles.append(right_angle)
+				angles.append(-right_angle)
 
 			X_train = np.array(images)
 			y_train = np.array(angles)
