@@ -2,43 +2,38 @@ import os
 import csv
 
 samples = []
-# Use this with data provided by Udacity
-with open('./data.bak/driving_log.csv') as csvfile:
-# Use this for own data
-#with open('./data/driving_log.csv') as csvfile:
+with open('./data/driving_log.csv') as csvfile:
 	reader = csv.reader(csvfile)
 	for line in reader:
 		samples.append(line)
 
 from sklearn.model_selection import train_test_split
 from keras.preprocessing.image import img_to_array, load_img
-# Multiply by 3 because we get data from 3 different angles, and flipped images
-train_samples, validation_samples = train_test_split(samples*3*2, test_size=0.2)
+train_samples, validation_samples = train_test_split(samples, test_size=0.2)
 
 import cv2
 import numpy as np
 import sklearn
 
-def generator(samples, batch_size=256):
+def generator(samples, batch_size=32):
 	num_samples = len(samples)
 	while 1: # Loop forever so the generator never terminates
 		sklearn.utils.shuffle(samples)
 		for offset in range(0, num_samples, batch_size):
 			batch_samples = samples[offset:offset+batch_size]
-
 			images = []
 			angles = []
-			for batch_sample in batch_samples:				
+			for batch_sample in batch_samples:		
+				# read all 3 images
 				for i in range (3):
-					# Use this with data provided by Udacity
-					name = './data.bak/IMG/'+batch_sample[i].split('/')[-1]
-					# Use this for own data
-					#name = batch_sample[i].split('/')[-1]
+					name = batch_sample[i].split('/')[-1]
 					image = load_img(name)
 					image = img_to_array(image)
 					images.append(image)
+					# flip and save the image
 					image_flipped = np.fliplr(image)
 					images.append(image_flipped)
+				# read steer measurement, calculate left and right ones, and flip everything
 				center_angle = float(batch_sample[3])
 				correction = 0.2
 				left_angle = center_angle + correction
@@ -61,7 +56,7 @@ validation_generator = generator(validation_samples)
 ch, row, col = 3, 80, 320  # Trimmed image format
 
 from keras.models import Sequential
-from keras.layers import Flatten, Dense, Lambda, Cropping2D
+from keras.layers import Flatten, Dense, Lambda, Cropping2D, Dropout
 from keras.layers.convolutional import Convolution2D
 from keras.layers.pooling import MaxPooling2D
 
@@ -75,6 +70,7 @@ model.add(Flatten())
 model.add(Dense(1))
 
 model.compile(loss='mse', optimizer='adam')
-model.fit_generator(train_generator, samples_per_epoch= len(train_samples), validation_data=validation_generator, nb_val_samples=len(validation_samples), nb_epoch=5)
+# must multiply samples by 3 for different angles and by 2 for flipped images
+model.fit_generator(train_generator, samples_per_epoch= len(train_samples)*3*2, validation_data=validation_generator, nb_val_samples=len(validation_samples)*3*2, nb_epoch=5)
 
 model.save('model.h5')
